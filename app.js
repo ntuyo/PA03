@@ -194,6 +194,7 @@ function getNum(coursenum){
 }
 // this route load in the courses into the database
 // or updates the courses if it is a new database
+//
 app.get('/upsertDB',
   async (req,res,next) => {
     //await Course.deleteMany({})
