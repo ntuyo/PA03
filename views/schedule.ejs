@@ -1,15 +1,23 @@
-<ul>
-    <% for (course of courses){%>
-        <li> 
-            <a href="/schedule/remove/<%= course._id %>">X</a>
-            <%= course['subject'] %>
-            <%= course.coursenum %>
-            <%= course.name %>
-            <%= course.term %>
+<br>
+<div class="jumbotron"><h1>My Schedule</h1></div>
+<div class="d-flex flex-wrap overflow-scroll">
+    <% for (course of courses) {%>
+        <div class="p-5 m-5 border border-5 border-danger bg-warning">
+            <p><%= course['subject'] + " " + course.coursenum + " " + course.term%></p>
+            <br>
+            <p><%= course.enrolled + " enrolled"%></p>
+            <p><%= course.waiting + " waiting"%></p>
+            <hr>
+            <p><%= course.instructor%></p>
+            <br>
             
-        </li>
-    <% } %>
-</ul>
+            <p><%= course.title%></p>
+            <hr>            
+            <a href="/schedule/remove/<%= course._id %>">X DELETE</a>
+
+        </div>
+    <% }%>
+    </div>
 
 <!--
     <pre>

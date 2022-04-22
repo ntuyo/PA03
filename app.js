@@ -33,8 +33,8 @@ const courses = require('./public/data/courses20-21.json')
 // *********************************************************** //
 
 const mongoose = require( 'mongoose' );
-const mongodb_URI = 'mongodb://localhost:27017/cs103a_todo'
-//const mongodb_URI = 'mongodb+srv://cs_sj:BrandeisSpr22@cluster0.kgugl.mongodb.net/myFirstDatabase?retryWrites=true&w=majority'
+//const mongodb_URI = 'mongodb://localhost:27017/pa03db'
+const mongodb_URI = 'mongodb+srv://cs_sj:BrandeisSpr22@cluster0.kgugl.mongodb.net/myFirstDatabase?retryWrites=true&w=majority'
 
 mongoose.connect( mongodb_URI, { useNewUrlParser: true, useUnifiedTopology: true } );
 // fix deprecation warnings
@@ -194,16 +194,17 @@ function getNum(coursenum){
 }
 // this route load in the courses into the database
 // or updates the courses if it is a new database
-//
 app.get('/upsertDB',
   async (req,res,next) => {
     //await Course.deleteMany({})
     for (course of courses){
-      const {subject,coursenum,section,term}=course;
+      const {subject,coursenum,section,term,times}=course;
       const num = getNum(coursenum);
+      const strTimes = time2str(times);
       course.num=num
       course.suffix = coursenum.slice(num.length)
-      await Course.findOneAndUpdate({subject,coursenum,section,term},course,{upsert:true})
+      course.strTime = strTimes
+      await Course.findOneAndUpdate({subject,coursenum,section,term,times},course,{upsert:true})
     }
     const num = await Course.find({}).count();
     res.send("data uploaded: "+num)
@@ -234,7 +235,6 @@ function time2str(time){
   const days = time.days
   const meetingType = time['type'] || "Lecture"
   const location = time['building'] || ""
-
   return `${meetingType}: ${days.join(",")}: ${min2HourMin(start)}-${min2HourMin(end)} ${location}`
 }
 
@@ -244,7 +244,7 @@ app.post('/courses/bySubject',
     const courses = await Course.find({subject:subject,independent_study:false}).sort({term:1,num:1,section:1})
     
     res.locals.courses = courses
-    res.locals.times2str = times2str
+    //res.locals.times2str = times2str
     //res.json(courses)
     res.render('courselist')
   }
@@ -255,7 +255,7 @@ app.get('/courses/show/:courseId',
     const {courseId} = req.params;
     const course = await Course.findOne({_id:courseId})
     res.locals.course = course
-    res.locals.times2str = times2str
+    //res.locals.times2str = times2str
     //res.json(course)
     res.render('course')
   }
@@ -280,7 +280,31 @@ app.post('/courses/byInst',
                .sort({term:1,num:1,section:1})
     //res.json(courses)
     res.locals.courses = courses
-    res.locals.times2str = times2str
+    // res.locals.times2str = times2str
+    res.render('courselist')
+  }
+)
+
+app.get('/courses/byKeyword',
+  async (req,res,next) => {
+    const keyword = req.params;
+    const courses = await Course.find({name:{'$regex' : keyword, '$options' : 'i'},independent_study:false})
+    //res.json(courses)
+    res.locals.courses = courses
+    res.render('courselist')
+  } 
+)
+
+app.post('/courses/byKeyword',
+  async (req,res,next) => {
+    const {keyword} = req.body;
+    const courses = 
+       await Course
+               .find({name:{'$regex' : keyword, '$options' : 'i'},independent_study:false})
+               .sort({term:1,num:1,section:1})
+    //res.json(courses)
+    res.locals.courses = courses
+    // res.locals.times2str = times2str
     res.render('courselist')
   }
 )
@@ -311,7 +335,8 @@ app.get('/schedule/show',
       const courseIds = 
          (await Schedule.find({userId}))
                         .sort(x => x.term)
-                        .map(x => x.courseId)
+     
+                       .map(x => x.courseId)
       res.locals.courses = await Course.find({_id:{$in: courseIds}})
       res.render('schedule')
     } catch(e){
